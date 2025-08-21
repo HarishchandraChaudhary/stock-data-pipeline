@@ -1,0 +1,11 @@
+apache-airflow==2.7.1
+apache-airflow-providers-postgres==5.6.0
+psycopg2-binary==2.9.7
+requests==2.31.0
+pandas==2.0.3
+sqlalchemy==1.4.49
+alpha-vantage==2.3.1
+python-dotenv==1.0.0
+retry==0.9.2
+celery==5.3.1
+redis==4.6.0

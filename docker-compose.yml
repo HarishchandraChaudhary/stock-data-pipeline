@@ -1,0 +1,102 @@
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_db_volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: always
+    ports:
+      - "5433:5432"
+
+  postgres-data:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: stockuser
+      POSTGRES_PASSWORD: stockpass123
+      POSTGRES_DB: stockdata
+    volumes:
+      - postgres_data_volume:/var/lib/postgresql/data
+      - ./sql/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "stockuser", "-d", "stockdata"]
+      interval: 5s
+      retries: 5
+    restart: always
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:latest
+    expose:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: always
+
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    command: webserver
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=81HqDtbqAywKSOumSHMpQfXh-y8vrdMJ6QnYMRGv_Ck=
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=true
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+      - POSTGRES_HOST=postgres-data
+      - POSTGRES_DB=stockdata
+      - POSTGRES_USER=stockuser
+      - POSTGRES_PASSWORD=stockpass123
+      - PYTHONPATH=/opt/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./scripts:/opt/airflow/scripts
+    depends_on:
+      - postgres
+      - postgres-data
+      - redis
+    restart: always
+
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    command: scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=81HqDtbqAywKSOumSHMpQfXh-y8vrdMJ6QnYMRGv_Ck=
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+      - POSTGRES_HOST=postgres-data
+      - POSTGRES_DB=stockdata
+      - POSTGRES_USER=stockuser
+      - POSTGRES_PASSWORD=stockpass123
+      - PYTHONPATH=/opt/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./scripts:/opt/airflow/scripts
+    depends_on:
+      - postgres
+      - postgres-data
+      - redis
+    restart: always
+
+volumes:
+  postgres_db_volume:
+  postgres_data_volume:
