@@ -41,8 +41,8 @@ Follow these simple steps to set up and run the data pipeline.
 First, clone this project from GitHub to your local machine:
 
 ```bash
-git clone https://github.com/your-username/your-repository-name.git
-cd your-repository-name
+git clone https://github.com/HarishchandraChaudhary/stock-data-pipeline
+cd stock-data-pipeline
 ```
 
 #### 2\. Configure Environment Variables
